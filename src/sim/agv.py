@@ -3,7 +3,7 @@ from .traced import String
 
 
 def cond_agv_isFree(pos):
-    def cond_isFree(prg):
+    def cond_isFree(prg, **kwargs):
         return prg.parent.course.isFree(pos)
 
     return cond_isFree
@@ -41,6 +41,13 @@ class AGV(SimObject):
     def end(self):
         self.position.update()
         return super().end()
+
+
+class AgvStep:
+    def __init__(self, pos, waitfor=None, step=None):
+        self.pos = pos
+        self.waitfor = waitfor
+        self.step = None
 
 
 class AgvDrive(Program):
@@ -82,7 +89,7 @@ class AgvDrive(Program):
                 load = ""
             if actual_pos in self.positions_cond:
                 check_i = self.positions_cond.index(actual_pos)
-                while not self.conditions[check_i](self):
+                while not self.conditions[check_i](prg=self):
                     yield
 
             actual_pos_i = self.parent.course.positions.index(actual_pos)

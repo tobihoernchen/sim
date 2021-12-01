@@ -52,12 +52,12 @@ class Pick(Step):
         if add_condition != None:
             cond = lambda **x: add_condition(**x) and obj.req_give(position=position)
         else:
-            cond = lambda: obj.req_give(position=position)
+            cond = lambda **x: obj.req_give(position=position)
         return super().__init__(
             obj,
             cond=cond,
             cond_args=add_condition_args + ["part"],
-            mod=lambda: {"part": obj.give(position=position)},
+            mod=lambda **x: {"part": obj.give(position=position)},
             time=time,
             timeto=timeto,
         )

@@ -1,4 +1,7 @@
-import Sim as sim
+import sys
+
+sys.path.append("D:/Projekte/Sim/src")
+import sim
 
 
 jig11 = sim.Jig("Jig 11")

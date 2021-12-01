@@ -1,6 +1,8 @@
-import Sim as sim
 import timeit
+import sys
 
+sys.path.append("D:/Projekte/Sim/src")
+import sim
 
 agv = sim.Jig("AGV-Bhf HC")
 sim.BufferSource("HC-Einlauf", 60, 8, agv, getNextPart=sim.src_rework_10)

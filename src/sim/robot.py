@@ -144,6 +144,7 @@ class RobHandlingBetter(Program):
         conditions: List of strings wit len of places_at - 1. If part contains the string, it is handled to the corresponding place.
         """
         super().__init__(name, parent=parent)
+        self.part = None
         self.steps = steps
         self.code = self.code_gen()
 

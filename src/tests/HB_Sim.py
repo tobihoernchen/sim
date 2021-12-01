@@ -1,3 +1,6 @@
+import sys
+
+sys.path.append("D:/Projekte/Sim/src")
 import sim
 import timeit
 
@@ -43,10 +46,10 @@ rb_110_100 = sim.Rob("110RB_100")
 sim.RobHandlingBetter(
     "Entnahme",
     [
-        sim.Pick(rot_buffer, time = 50, position = 3),
-        sim.Place(handling_jig, time = 10, timeto=2)
+        sim.Pick(rot_buffer, time=50, position=3),
+        sim.Place(handling_jig, time=10, timeto=2),
     ],
-    parent = rb_110_100
+    parent=rb_110_100,
 )
 
 rb_100_100 = sim.Rob("100RB_100")

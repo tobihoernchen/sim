@@ -4,7 +4,7 @@ from .traced import Int
 
 
 def cond_buffer_empty(buf):
-    def bufferempty(prg=None):
+    def bufferempty(**kwargs):
         return buf.fill == 0
 
     return bufferempty
