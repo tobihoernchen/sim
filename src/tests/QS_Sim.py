@@ -11,7 +11,7 @@ hc_rot1 = sim.RotBuffer("HC Drehspeicher 1", 3, 6, 5)
 hc_rot2 = sim.RotBuffer("HC Drehspeicher 2", 3, 6, 5)
 
 hc_drn = sim.Jig("HC Drain")
-sim.BufferDrain("Hc Drain", 172, parent=hc_drn)
+sim.BufferDrain("Hc Drain", 72, parent=hc_drn)
 
 hand_special = sim.Jig("Handling Special")
 hand_mess = sim.Jig("Handling Mess")

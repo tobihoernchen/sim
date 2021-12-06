@@ -47,19 +47,14 @@ class AgvStep:
     def __init__(self, pos, waitfor=None, step=None):
         self.pos = pos
         self.waitfor = waitfor
-        self.step = None
+        self.step = step
 
 
 class AgvDrive(Program):
     def __init__(
         self,
         name,
-        positions_cond=[],
-        conditions=[],
-        positions_take=[],
-        take_from=[],
-        positions_place=[],
-        place_at=[],
+        steps=[],
         parent=None,
     ):
         self.positions_cond = positions_cond

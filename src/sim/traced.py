@@ -1,9 +1,12 @@
+from .core import core
+
+
 class Int:
     def __init__(self, parent, prefix="", postfix=""):
         self.history = []
         self.val = 0
-        self.lastChange = 0
         self.parent = parent
+        self.lastChange = self.parent.core.now
         self.prefix = prefix
         self.postfix = postfix
         self.parent.core.addTrace(self)
@@ -83,20 +86,21 @@ class String:
         self.history = []
         self.val = []
         self.lastChange = 0
-        self.parent = parent
+        self.name = parent.name
         self.prefix = prefix
         self.postfix = postfix
-        self.parent.core.addTrace(self)
+        parent.core.addTrace(self)
+        self.core = parent.core
 
     def getName(self):
-        return self.prefix + self.parent.name + self.postfix
+        return self.prefix + self.name + self.postfix
 
     def __lshift__(self, new_value):
         new_value = new_value.replace(" ", "")
         if not new_value in self.val:
             if not new_value in self.reserved:
                 self.update()
-                self.lastChange = self.parent.core.now
+                self.lastChange = self.core.now
             if new_value == "":
                 self.val = []
             else:
@@ -107,13 +111,15 @@ class String:
         if new_value in self.val:
             if not new_value in self.reserved:
                 self.update()
-                self.lastChange = self.parent.core.now
+                self.lastChange = self.core.now
             self.val.remove(new_value)
 
     def __eq__(self, other):
         if other == "":
             if len(self.val) == 0:
                 return True
+            return False
+        elif other == None:
             return False
         other = other.replace(" ", "")
         return other in self.val
@@ -128,12 +134,24 @@ class String:
         return ", ".join(without_reserved)
 
     def update(self):
-        if self.lastChange != self.parent.core.now and self.get() != "":
+        if self.lastChange != self.core.now and self.get() != "":
             self.history.append(
                 [
                     self.get(),
                     self.getName(),
                     self.lastChange,
-                    self.parent.core.now,
+                    self.core.now,
                 ]
             )
+
+
+class Zone(String):
+    def __init__(self, name, prefix="", postfix=""):
+        self.history = []
+        self.val = []
+        self.lastChange = 0
+        self.name = name
+        self.prefix = prefix
+        self.postfix = postfix
+        core.addTrace(self)
+        self.core = core

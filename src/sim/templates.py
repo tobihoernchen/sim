@@ -2,92 +2,41 @@ from .traced import String
 from .core import core
 
 
-mod_rework_done = lambda x, **kwargs: x.check("NA")
-mod_rework_create = lambda x, **kwargs: x + "NA"
-mod_inline_measure = lambda x, **kwargs: x.check("IMT")
-mod_us_testing = lambda x, **kwargs: x.check("US")
-mod_geo = lambda x, **kwargs: x.check("Geo")
+def mod_rework_done(x, **kwargs):
+    x.check("NA")
+    return x
+
+
+def mod_rework_create(x, **kwargs):
+    x + "NA"
+    return x
+
+
+def mod_inline_measure(x, **kwargs):
+    x.check("IMT")
+    return x
+
+
+def mod_us_testing(x, **kwargs):
+    x.check("US")
+    return x
+
+
 mod_idle = lambda x, **kwargs: x
 
 cond_rework = lambda x, **kwargs: x == "NA"
 cond_inline = lambda x, **kwargs: x == "IMT"
 cond_us = lambda x, **kwargs: x == "US"
-cond_geo = lambda x, **kwargs: x == "Geo"
 cond_all = lambda x, **kwargs: True
 cond_part_present = lambda x, **kwargs: type(x) == str
 
 
-class Step:
-    def __init__(
-        self,
-        obj,
-        cond=None,
-        cond_args=[],
-        mod=None,
-        mod_args=[],
-        time=None,
-        timeto=None,
-        **kwargs
-    ):
-        self.obj = obj
-        self.cond = cond if cond != None else cond_all
-        self.cond_args = cond_args
-        self.mod = mod if mod != None else mod_idle
-        self.mod_args = mod_args
-        self.time = time
-        self.timeto = timeto
-        self.kwargs = kwargs
+def cond_part(cond):
+    return lambda x, **kwargs: x == cond
 
 
-class Pick(Step):
-    def __init__(
-        self,
-        obj,
-        time,
-        timeto=None,
-        add_condition=None,
-        add_condition_args=[],
-        position=0,
-    ):
-        if add_condition != None:
-            cond = lambda **x: add_condition(**x) and obj.req_give(position=position)
-        else:
-            cond = lambda **x: obj.req_give(position=position)
-        return super().__init__(
-            obj,
-            cond=cond,
-            cond_args=add_condition_args + ["part"],
-            mod=lambda **x: {"part": obj.give(position=position)},
-            time=time,
-            timeto=timeto,
-        )
-
-
-class Place(Step):
-    def __init__(
-        self,
-        obj,
-        time,
-        timeto=None,
-        add_condition=None,
-        add_condition_args=[],
-        position=0,
-    ):
-        if add_condition != None:
-            cond = lambda **x: add_condition(**x) and obj.req_receive(
-                **x, position=position
-            )
-        else:
-            cond = lambda **x: obj.req_receive(**x, position=position)
-        return super().__init__(
-            obj,
-            cond=cond,
-            cond_args=add_condition_args + ["part"],
-            mod=lambda **x: obj.receive(**x, position=position),
-            mod_args=["part"],
-            time=time,
-            timeto=timeto,
-        )
+def mod_part(cond):
+    return lambda x, **kwargs: x.check(cond)
 
 
 class SimObject:

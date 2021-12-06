@@ -10,10 +10,30 @@ def cond_buffer_empty(buf):
     return bufferempty
 
 
+def cond_buffer_contains(buf, contains):
+    def buffercontains(**kwargs):
+        return any([part == contains for part in buf.parts])
+
+    return buffercontains
+
+
+def cond_buffer_contains_not(buf, contains):
+    def buffercontains(**kwargs):
+        return not any([part == contains for part in buf.parts])
+
+    return buffercontains
+
+
+def cond_buffer_willing_receive(buf, part=None, position=None):
+    return lambda **kwargs: buf.req_receive(
+        part=part, reserving=False, position=position
+    )
+
+
 class Buffer(SimObject):
     def __init__(self, name, capacity):
         super().__init__(name)
-        self.state.prefix = "Rotation_"
+        self.state.prefix = "State_"
         self.max_parts = capacity
         self.parts = [False for part in range(capacity)]
         self.reserved = [False for part in range(capacity)]
@@ -32,13 +52,14 @@ class Buffer(SimObject):
                     return i
         return False
 
-    def req_receive(self, part, **kwargs):
+    def req_receive(self, part, reserving=True, **kwargs):
         if self.fill < self.max_parts and not self.state == "busy":
             spot = self.get_free_spot(part=part, **kwargs)
             if type(spot) == int:
-                self.reserved[spot] = True
-                self.state << "loading_active"
-                self.fill += 1
+                if reserving:
+                    self.reserved[spot] = True
+                    self.state << "loading_active"
+                    self.fill += 1
                 return True
         return False
 
@@ -52,12 +73,13 @@ class Buffer(SimObject):
                 return True
         return False
 
-    def req_give(self, part="", **kwargs):
+    def req_give(self, part="", reserving=True, **kwargs):
         if self.fill > 0 and not self.state == "busy":
             spot = self.get_part_to_give(part, **kwargs)
             if type(spot) == int:
-                self.reserved[spot] = True
-                self.state << "unloading_active"
+                if reserving:
+                    self.reserved[spot] = True
+                    self.state << "unloading_active"
                 return True
         return False
 
@@ -84,7 +106,9 @@ class Jig(Buffer):
 
 
 class BufferWorkOn(Program):
-    def __init__(self, name, time, condition=None, modifier=None, parent=None):
+    def __init__(
+        self, name, time, places=None, condition=None, modifier=None, parent=None
+    ):
         """Simple program to work an a part and only release it after the work is done.
 
         Keyword Arguments:
@@ -99,6 +123,10 @@ class BufferWorkOn(Program):
         if condition == None:
             self.condition = cond_all
 
+        self.places = places
+        if places == None:
+            self.places = range(len(self.parent.parts))
+
         self.modifier = modifier
         if modifier == None:
             self.modifier = mod_idle
@@ -110,7 +138,7 @@ class BufferWorkOn(Program):
             # Teil anwesend?
             success = False
             while not success:
-                for part_nr in range(len(self.parent.parts)):
+                for part_nr in self.places:
                     if self.parent.parts[part_nr]:
                         if self.condition(self.parent.parts[part_nr]):
                             success = True
@@ -119,7 +147,8 @@ class BufferWorkOn(Program):
             # Blockieren
             self.activate()
             self.parent.reserved[part_nr] = True
-            yield [self.parent.core.now + self.workon_time]
+            self.waitfor(self.workon_time)
+            yield
             modded = self.modifier(self.parent.parts[part_nr])
             self.parent.parts[part_nr] = modded
             self.parent.reserved[part_nr] = False
@@ -152,7 +181,7 @@ class BufferSource(Program):
                     next_part = Part()
                 else:
                     next_part = self.getNextPart()
-                if not self.parent.req_receive(next_part, position=self.position):
+                if not self.parent.req_receive(part=next_part, position=self.position):
                     yield
                 else:
                     break
@@ -160,7 +189,7 @@ class BufferSource(Program):
             self.waitfor(self.transfer_time)
             yield
             self.activate()
-            self.parent.receive(next_part, position=self.position)
+            self.parent.receive(part=next_part, position=self.position)
             self.deactivate()
             self.trigger_update()
             self.waitfor(self.respawn_time)
@@ -180,6 +209,18 @@ class BufferDrain(Program):
         self.code = self.code_gen()
         self.part = None
         self.position = position
+        self.first_drain = -1
+        self.nr_drains = 0
+        self.jph = Int(self.parent, "JPH-")
+
+    def doc(self):
+        self.nr_drains += 1
+        if self.first_drain == -1:
+            self.first_drain = self.parent.core.now
+        if self.parent.core.now != self.first_drain:
+            self.jph << int(
+                self.nr_drains * 3600 / (self.parent.core.now - self.first_drain)
+            )
 
     def code_gen(self):
         while True:
@@ -190,8 +231,8 @@ class BufferDrain(Program):
             # Teil anfordern
             while not self.parent.req_give(position=self.position):
                 yield
-            yield
             self.part = self.parent.give(position=self.position)
+            self.doc()
             self.deactivate()
             self.trigger_update()
             yield

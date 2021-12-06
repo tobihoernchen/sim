@@ -1,4 +1,5 @@
-from .templates import SimObject, Program, Step, cond_all
+from .templates import SimObject, Program, cond_all
+from .steps import Step
 
 
 class Rob(SimObject):
@@ -151,50 +152,32 @@ class RobHandlingBetter(Program):
     def code_gen(self):
         while True:
             for step in self.steps:
-                if isinstance(step, list):
-                    while not res:
-                        for substep in step:
-                            if isinstance(substep, Step):
-                                cond_args = dict(
-                                    (k, self.__dict__[k]) for k in substep.cond_args
-                                )
-                                res = substep.cond(cond_args)
-                                if res:
-                                    break
-
-                            while not step.cond(**cond_args):
-                                yield
-                            if not self.active:
-                                self.activate()
-                    if not self.active:
-                        self.activate()
-                    if substep.time != None:
-                        self.waitfor(step.time)
-                        yield
-                    mod_args = dict((k, self.__dict__[k]) for k in substep.mod_args)
-                    if isinstance(res, dict):
-                        res = substep.mod(**mod_args)
-                        for k, val in res.items():
-                            self.__dict__[k] = val
-                        self.trigger_update()
-
-                elif isinstance(step, Step):
-                    if step.timeto != None:
-                        self.waitfor(step.timeto)
-                        yield
-                    cond_args = dict((k, self.__dict__[k]) for k in step.cond_args)
-                    while not step.cond(**cond_args):
-                        yield
-                    if not self.active:
-                        self.activate()
-                    if step.time != None:
-                        self.waitfor(step.time)
-                        yield
-                    mod_args = dict((k, self.__dict__[k]) for k in step.mod_args)
-                    res = step.mod(**mod_args)
-                    if isinstance(res, dict):
-                        for k, val in res.items():
-                            self.__dict__[k] = val
-                        self.trigger_update()
+                for _ in self.stepIterator(step):
+                    yield
             self.deactivate()
             self.trigger_update()
+
+    def stepIterator(self, step):
+        if step.timeto != None:
+            self.waitfor(step.timeto)
+            yield
+        cond_args = dict((k, self.__dict__[k]) for k in step.cond_args)
+        while (step.blocking != None and not step.blocking == "") or (
+            not step.cond(**cond_args)
+        ):
+            yield
+        if not self.active:
+            self.activate()
+        if not step.blocking == None:
+            step.blocking << "blocked_by_" + self.name
+        if step.time != None:
+            self.waitfor(step.time)
+            yield
+        mod_args = dict((k, self.__dict__[k]) for k in step.mod_args)
+        res = step.mod(**mod_args)
+        if isinstance(res, dict):
+            for k, val in res.items():
+                self.__dict__[k] = val
+        if not step.blocking == None:
+            step.blocking >> "blocked_by_" + self.name
+        self.trigger_update()

@@ -15,6 +15,10 @@ def src_part(group, type=""):
     return func
 
 
+def src_simple():
+    return Part()
+
+
 def src_SLT_5():
     return Part(planned=["SLT5"])
 
@@ -29,7 +33,7 @@ class Part:
 
     def __eq__(self, other: object) -> bool:
         if (
-            other in self.passed
+            other in self.planned
             or other == self.type
             or other == self.seq_nr
             or other == self.group
